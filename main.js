@@ -1,5 +1,6 @@
 import { generateReturnsArray } from "./src/investmentGoals";
 import { Chart } from "chart.js/auto";
+import { createTable } from "./src/table";
 
 const finalMoneyChart = document.getElementById("final-money-distribuition");
 const progressionChart = document.getElementById("progression");
@@ -7,6 +8,41 @@ const form = document.getElementById("investement-form");
 const clearFormButton = document.getElementById("clear-form");
 let doughnutChartReference = {};
 let barChartProgression = {};
+
+const columsArray = [
+  { columnLabel: "Mês", accessor: "month" },
+  {
+    columnLabel: "Total Investido",
+    accessor: "investedAmount",
+    format: (numberInfo) => formatCurrencyToTable(numberInfo),
+  },
+  {
+    columnLabel: "Rendimento Mensal",
+    accessor: "interestReturns",
+    format: (numberInfo) => formatCurrencyToTable(numberInfo),
+  },
+  {
+    columnLabel: "Rendimento Total",
+    accessor: "totalInterestReturns",
+    format: (numberInfo) => formatCurrencyToTable(numberInfo),
+  },
+  {
+    columnLabel: "Quantia total",
+    accessor: "totalAmount",
+    format: (numberInfo) => formatCurrencyToTable(numberInfo),
+  },
+];
+
+function formatCurrencyToTable(value) {
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function formatCurrencyToGraph(value) {
+  return value.toFixed(2);
+}
 
 function renderProgression(evt) {
   evt.preventDefault();
@@ -41,18 +77,29 @@ function renderProgression(evt) {
     returnRatePeriod
   );
 
+  const finalInvestmentObject = returnsArray[returnsArray.length - 1];
+
   doughnutChartReference = new Chart(finalMoneyChart, {
     type: "doughnut",
     data: {
-      labels: ["Valor Investido", "Retorno Investimento"],
+      labels: ["Valor Investido", "Rendimento", "Imposto"],
       datasets: [
         {
-          label: "Valor ",
           data: [
-            returnsArray[returnsArray.length - 1].investedAmount,
-            returnsArray[returnsArray.length - 1].interestReturns,
+            formatCurrencyToGraph(finalInvestmentObject.investedAmount),
+            formatCurrencyToGraph(
+              finalInvestmentObject.totalInterestReturns * (1 - taxRate / 100)
+            ),
+            formatCurrencyToGraph(
+              finalInvestmentObject.totalInterestReturns * (taxRate / 100)
+            ),
           ],
-          backgroundColor: ["rgb(255, 99, 132)", "rgb(54, 162, 235)"],
+          backgroundColor: [
+            "rgb(255, 99, 132)",
+            "rgb(54, 162, 235)",
+            "rgb(255, 205, 86)",
+            // "rgb(255,205,86)",
+          ],
           hoverOffset: 4,
         },
       ],
@@ -68,15 +115,15 @@ function renderProgression(evt) {
       datasets: [
         {
           label: "Valor Investido",
-          data: returnsArray.map(
-            (investmentObject) => investmentObject.investedAmount
+          data: returnsArray.map((investmentObject) =>
+            formatCurrencyToGraph(investmentObject.investedAmount)
           ),
           backgroundColor: "rgb(255, 99, 132)",
         },
         {
           label: "Retorno Investimento",
-          data: returnsArray.map(
-            (investmentObject) => investmentObject.interestReturns
+          data: returnsArray.map((investmentObject) =>
+            formatCurrencyToGraph(investmentObject.interestReturns)
           ),
           backgroundColor: "rgb(54, 162, 235)",
         },
@@ -94,6 +141,7 @@ function renderProgression(evt) {
       },
     },
   });
+  createTable(columsArray, returnsArray, "results-table");
 }
 
 function isObjectEmpty(obj) {
@@ -162,5 +210,18 @@ for (const formElement of form) {
   }
 }
 
+const mainEL = document.querySelector("main");
+const carousell = document.getElementById("carroussel");
+const nextButton = document.getElementById("slide-arrow-next");
+const previousButton = document.getElementById("slide-arrow-previous");
+
 form.addEventListener("submit", renderProgression);
 clearFormButton.addEventListener("click", clearForm);
+
+nextButton.addEventListener("click", () => {
+  carousell.scrollLeft += mainEL.clientWidth;
+});
+
+previousButton.addEventListener("click", () => {
+  carousell.scrollLeft -= mainEL.clientWidth;
+});
